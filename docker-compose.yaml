@@ -1,0 +1,47 @@
+version: "3.9"
+
+services:
+  web:
+    build: .
+    # container_name: drf_app
+    command: gunicorn config.wsgi:application --bind 0.0.0.0:8111 --workers 4 --threads 2
+    volumes:
+      - ./backend:/app
+      - static_volume:/app/static
+    expose:
+      - "8111"
+    depends_on:
+      - db
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings
+      - DB_NAME=drf
+      - DB_USER=drf
+      - DB_PASSWORD=drf
+      - DB_HOST=db
+      - DB_PORT=5432
+    # deploy:
+    # replicas: 3
+
+  db:
+    image: postgres:16
+    container_name: drf_db
+    environment:
+      POSTGRES_DB: drf
+      POSTGRES_USER: drf
+      POSTGRES_PASSWORD: drf
+    volumes:
+      - ./db:/var/lib/postgresql/data
+
+  nginx:
+    image: nginx:latest
+    container_name: drf_nginx
+    ports:
+      - "8111:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - static_volume:/app/static
+    depends_on:
+      - web
+
+volumes:
+  static_volume:
